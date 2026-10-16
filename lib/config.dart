@@ -7,10 +7,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class AppConfig {
   static const supabaseUrl = 'https://woobxsdrtbbiqxefnyvl.supabase.co';
   static const supabaseAnonKey = 'sb_publishable_Meks76UFtuyAmsznOhLa_A_rI4sCO2s';
-
+  
   /// Set to your college email domain (e.g. 'college.edu.in') to only allow
   /// campus emails to sign up. Leave empty to allow any email.
-  static const allowedEmailDomain = 'rvu.edu.in';
+  static const allowedEmailDomain = '';
 
   static const categories = [
     'ID Card',

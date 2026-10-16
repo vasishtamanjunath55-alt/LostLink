@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config.dart';
+import '../widgets/brand.dart';
 import 'post_item_screen.dart';
 import 'tabs.dart';
 
@@ -25,9 +26,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('LostLink'),
+        backgroundColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        titleSpacing: 16,
+        title: Row(children: [
+          const BrandMark(size: 32),
+          const SizedBox(width: 10),
+          Text('LostLink',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w700)),
+        ]),
         actions: [
           IconButton(
             tooltip: 'Log out',
@@ -36,11 +49,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: _tab == 0
-          ? BrowseTab(key: ValueKey('browse$_tick'))
-          : MyPostsTab(key: ValueKey('mine$_tick')),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: _tab == 0
+            ? BrowseTab(key: ValueKey('browse$_tick'))
+            : MyPostsTab(key: ValueKey('mine$_tick')),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _post,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
         icon: const Icon(Icons.add),
         label: const Text('Report item'),
       ),
@@ -48,8 +66,14 @@ class _HomeScreenState extends State<HomeScreen> {
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.search), label: 'Browse'),
-          NavigationDestination(icon: Icon(Icons.list_alt), label: 'My posts'),
+          NavigationDestination(
+              icon: Icon(Icons.search),
+              selectedIcon: Icon(Icons.manage_search),
+              label: 'Browse'),
+          NavigationDestination(
+              icon: Icon(Icons.list_alt_outlined),
+              selectedIcon: Icon(Icons.list_alt),
+              label: 'My posts'),
         ],
       ),
     );

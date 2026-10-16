@@ -1,13 +1,17 @@
 # LostLink
 
 Flutter campus lost-and-found app. Backend: Supabase (free). APK built by GitHub Actions (free).
-No Flutter install needed. See SETUP steps in the chat, summarised here:
 
+## Setup
 1. Supabase: new project -> SQL Editor -> run `supabase_setup.sql`.
-   Authentication -> Providers -> Email -> turn OFF "Confirm email" (easiest for a campus pilot).
+   Authentication -> Sign In / Providers -> Email -> turn OFF "Confirm email".
 2. Put your Project URL + anon key in `lib/config.dart`.
-3. Push this folder to a GitHub repo (branch `main`). The "Build LostLink APK" action runs automatically.
-4. Open the repo -> Releases -> download `LostLink.apk` on your phone -> install (allow "unknown sources").
+3. Push everything (including `.github`, `assets`, `lib`, `pubspec.yaml`) to a GitHub repo, branch `main`.
+   The "Build LostLink APK" action runs automatically (~8 min).
+4. Repo -> Releases -> download `LostLink.apk` on your phone -> install.
 
-Local build (optional): install Flutter, run
-`flutter create . --platforms=android`, add INTERNET permission to AndroidManifest.xml, then `flutter build apk --release`.
+## Customising
+- Colours: `lib/theme.dart` (`AppColors.brand`, `brandAlt`) and the two `#4F46E5` values in `pubspec.yaml`.
+- App icon: replace `assets/icon/icon.png` and `icon_foreground.png`.
+- College email only: `allowedEmailDomain` in `lib/config.dart`.
+- Dark mode follows the phone's setting.

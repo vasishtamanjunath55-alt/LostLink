@@ -2,99 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../config.dart';
 import '../models/item.dart';
+import '../theme.dart';
+import '../widgets/brand.dart';
+import '../widgets/item_card.dart';
 import 'item_detail_screen.dart';
 
-Widget _emptyState(String msg) => ListView(
+Widget _scrollable(Widget child) => ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        const SizedBox(height: 80),
-        const Icon(Icons.inbox_outlined, size: 56, color: Colors.grey),
-        const SizedBox(height: 12),
-        Center(child: Text(msg, textAlign: TextAlign.center)),
-      ],
+      children: [const SizedBox(height: 50), Center(child: child)],
     );
-
-class ItemCard extends StatelessWidget {
-  final Item item;
-  final VoidCallback onTap;
-  const ItemCard({super.key, required this.item, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final badgeColor = item.isLost ? Colors.red : Colors.green;
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 96,
-              height: 96,
-              child: item.photoUrl != null
-                  ? Image.network(item.photoUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image))
-                  : Container(
-                      color: scheme.surfaceContainerHighest,
-                      child: const Icon(Icons.image_not_supported_outlined),
-                    ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: badgeColor.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          item.isLost ? 'LOST' : 'FOUND',
-                          style: TextStyle(
-                              color: badgeColor,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      if (!item.isOpen) ...[
-                        const SizedBox(width: 6),
-                        const Text('RECOVERED',
-                            style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey)),
-                      ],
-                    ]),
-                    const SizedBox(height: 4),
-                    Text(item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text('${item.category} • ${item.location}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall),
-                    Text(timeAgo(item.createdAt),
-                        style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// Browse all open reports, with search and filters.
 class BrowseTab extends StatefulWidget {
@@ -160,23 +76,20 @@ class _BrowseTabState extends State<BrowseTab> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final list = _filtered;
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
           child: TextField(
-            decoration: const InputDecoration(
-              hintText: 'Search items, places...',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-              isDense: true,
-            ),
+            decoration: fieldDeco(context,
+                hint: 'Search items, places...', icon: Icons.search),
             onChanged: (v) => setState(() => _query = v),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: SegmentedButton<String>(
             showSelectedIcon: false,
             segments: const [
@@ -189,15 +102,18 @@ class _BrowseTabState extends State<BrowseTab> {
           ),
         ),
         SizedBox(
-          height: 48,
+          height: 52,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             children: [
               for (final c in ['All', ...AppConfig.categories])
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
                   child: ChoiceChip(
+                    showCheckmark: false,
+                    avatar: Icon(categoryIcon(c), size: 18),
                     label: Text(c),
                     selected: _category == c,
                     onSelected: (_) => setState(() => _category = c),
@@ -206,21 +122,42 @@ class _BrowseTabState extends State<BrowseTab> {
             ],
           ),
         ),
+        if (!_loading && _error == null && list.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 2),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('${list.length} open report${list.length == 1 ? '' : 's'}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: scheme.onSurfaceVariant)),
+            ),
+          ),
         Expanded(
           child: _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const SkeletonList()
               : RefreshIndicator(
                   onRefresh: _load,
                   child: _error != null
-                      ? _emptyState(_error!)
+                      ? _scrollable(EmptyState(
+                          icon: Icons.wifi_off_rounded,
+                          title: 'No connection',
+                          message: _error!))
                       : list.isEmpty
-                          ? _emptyState('No matching reports yet.')
+                          ? _scrollable(const EmptyState(
+                              icon: Icons.search_off_rounded,
+                              title: 'Nothing here yet',
+                              message:
+                                  'No reports match your filters. Try a different search, or post one yourself.'))
                           : ListView.builder(
                               physics: const AlwaysScrollableScrollPhysics(),
                               padding: const EdgeInsets.only(bottom: 90),
                               itemCount: list.length,
                               itemBuilder: (_, i) => ItemCard(
-                                  item: list[i], onTap: () => _open(list[i])),
+                                  index: i,
+                                  item: list[i],
+                                  onTap: () => _open(list[i])),
                             ),
                 ),
         ),
@@ -279,19 +216,26 @@ class _MyPostsTabState extends State<MyPostsTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_loading) return const SkeletonList();
     return RefreshIndicator(
       onRefresh: _load,
       child: _error != null
-          ? _emptyState(_error!)
+          ? _scrollable(EmptyState(
+              icon: Icons.wifi_off_rounded,
+              title: 'No connection',
+              message: _error!))
           : _items.isEmpty
-              ? _emptyState("You haven't posted anything yet.\nTap 'Report item' to start.")
+              ? _scrollable(const EmptyState(
+                  icon: Icons.add_a_photo_outlined,
+                  title: 'No posts yet',
+                  message:
+                      "Lost something or found something? Tap 'Report item' to post it."))
               : ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(top: 8, bottom: 90),
+                  padding: const EdgeInsets.only(top: 4, bottom: 90),
                   itemCount: _items.length,
-                  itemBuilder: (_, i) =>
-                      ItemCard(item: _items[i], onTap: () => _open(_items[i])),
+                  itemBuilder: (_, i) => ItemCard(
+                      index: i, item: _items[i], onTap: () => _open(_items[i])),
                 ),
     );
   }
